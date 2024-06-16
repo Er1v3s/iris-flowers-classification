@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn import datasets
 from pathlib import Path
 from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, recall_score, f1_score, ConfusionMatrixDisplay, confusion_matrix
 
 plt.ion()
@@ -13,7 +13,7 @@ plt.ion()
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
-IMAGES_PATH = Path() / "images"
+IMAGES_PATH = Path() / "../images"
 IMAGES_PATH.mkdir(parents=True, exist_ok=True)
 
 def save_fig(fig_id: object, tight_layout: object = True,
@@ -76,51 +76,34 @@ def calculate_specificity(conf_matrix):
     specificity = TN / (TN + FP)
     return specificity.mean()
 
-print("\n%%%%%%%%%%  Support Vector Machine  %%%%%%%%%% \n")
+k_values = [20, 40, 60]
 
-params = [{
-    'C': 50,
-    'kernel': 'linear',
-    'random_state': 42
-}, {
-    'C': 100,
-    'kernel': 'rbf',
-    'gamma': 0.2,
-    'random_state': 42
-}, {
-    'C': 200,
-    'kernel': 'poly',
-    'degree': 3,
-    'gamma': 'scale',
-    'random_state': 42
-}]
+for k in k_values:
+    knn_clf = KNeighborsClassifier(n_neighbors=k)
+    knn_clf.fit(X_train, y_train)
 
-
-for i, param in enumerate(params):
-    svm_clf = SVC(**param)
-    svm_clf.fit(X_train, y_train)
-    svm_predictions = svm_clf.predict(X_test)
+    knn_predictions = knn_clf.predict(X_test)
 
     # Confusion matrix
-    svm_conf_matrix = confusion_matrix(y_test, svm_predictions)
+    knn_conf_matrix = confusion_matrix(y_test, knn_predictions)
     fig, ax = plt.subplots(figsize=(8, 6))
-    svm_cmd = ConfusionMatrixDisplay(svm_conf_matrix, display_labels=iris['target_names'])
-    svm_cmd.plot(ax=ax)
-    plt.title(f'Confusion matrix for SVM params: {i + 1}')
-    save_fig(f"SVM_ConfusionMatrix_{i + 1}")
+    knn_cmd = ConfusionMatrixDisplay(knn_conf_matrix, display_labels=iris['target_names'])
+    knn_cmd.plot(ax=ax)
+    plt.title(f'Confusion matrix for KNN k={k}')
+    save_fig(f"KNN_ConfusionMatrix_k{k}")
 
-    print(f"\nClassification report for SVM params: {param}:\n")
+    print(f"\nClassification report for KNN k={k}:\n")
 
-    accuracy_svm = accuracy_score(y_test, svm_predictions)
-    f1_svm = f1_score(y_test, svm_predictions, average='macro')
-    specificity_svm = calculate_specificity(svm_conf_matrix)
-    recall_svm = recall_score(y_test, svm_predictions, average='macro')
+    accuracy_knn = accuracy_score(y_test, knn_predictions)
+    f1_knn = f1_score(y_test, knn_predictions, average='macro')
+    specificity_knn = calculate_specificity(knn_conf_matrix)
+    recall_knn = recall_score(y_test, knn_predictions, average='macro')
 
-    results_svm_df = pd.DataFrame({
+    results_knn_df = pd.DataFrame({
         "Metrics": ["Accuracy", "F1 score", "Specificity", "Recall"],
-        "Values": [accuracy_svm, f1_svm, specificity_svm, recall_svm]
+        "Values": [accuracy_knn, f1_knn, specificity_knn, recall_knn]
     })
 
-    print(results_svm_df)
+    print(results_knn_df)
 
 plt.show(block=True)
